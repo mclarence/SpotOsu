@@ -19,29 +19,29 @@ namespace SpotOsu
         Mode currentMode;
         MainFrame mf;
 
+        String osuPath;
+        String client_id;
+
         public Form1()
         {
             InitializeComponent();
             txtOsuPath.Text = $@"C:\Users\{Environment.UserName}\AppData\Local\osu!\" ;
+            osuPath = $@"C:\Users\{Environment.UserName}\AppData\Local\osu!\";
             ChangeMode(Mode.SPOTIFY);
-            btnChangeMode.Enabled = false;
+            lbl_mode.Text = "Spotify";
+            spotifyToolStripMenuItem.Checked = true;
+        
         }
        
         private void ChangeMode(Mode mode)
         {
             switch (mode)
             {
-                case Mode.SOUNDCLOUD:
-                    lblSpotifyClientID.Visible = false;
-                    txtSpotifyClient.Visible = false;
-                    btnChangeMode.Text = "Spotify Mode";                
+                case Mode.SOUNDCLOUD:   
                     currentMode = Mode.SOUNDCLOUD;
                     break;
 
                 case Mode.SPOTIFY:
-                    lblSpotifyClientID.Visible = true;
-                    txtSpotifyClient.Visible = true;
-                    btnChangeMode.Text = "SoundCloud Mode";
                     currentMode = Mode.SPOTIFY;
                     break;
             }
@@ -50,7 +50,6 @@ namespace SpotOsu
         private void btnLoad_Click(object sender, EventArgs e)
         {
             lstCollections.Items.Clear();
-            string osuPath = txtOsuPath.Text;
             mf = new MainFrame(osuPath);
             lstCollections.Items.Add("All");
             foreach (var each in mf.collections_db.Collections)
@@ -88,7 +87,7 @@ namespace SpotOsu
 
         private async Task CreateSpotifyPlaylistAsync(IEnumerable<string> songs)
         {
-            string token = txtSpotifyClient.Text;
+            string token = client_id;
             string playlistName = txtPlaylistName.Text;
 
             if (token == string.Empty)
@@ -102,18 +101,18 @@ namespace SpotOsu
             }
             btnCreatePlaylist.Enabled = false;
             
-            lblCurrentStatus.Text = "Working...\nPlease wait.";
+            lbl_status.Text = "Working... Please wait.";
 
             try
             {
                 int numberOfSongs = await mf.CreateSpotifyPlaylistAsync(token, playlistName, songs);
                 MessageBox.Show("Playlist Created with: "+numberOfSongs+" songs");
-                lblCurrentStatus.Text = "Completed";
+                lbl_status.Text = "Completed";
             }
             catch (Exception except)
             {
                 MessageBox.Show(except.Message);
-                lblCurrentStatus.Text = "Error";
+               lbl_status.Text = "Error";
             }
 
             return;
@@ -141,7 +140,7 @@ namespace SpotOsu
         private void CreationCompleted()
         {
             btnCreatePlaylist.Enabled = true;
-            lblCurrentStatus.Text = "Completed";
+            lbl_status.Text = "Completed";
         }
 
         private void lstPlaylist_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -194,7 +193,18 @@ namespace SpotOsu
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            if (File.Exists(txtOsuPath.Text + "/osu!.db") == true)
+            {
+                btnLoad.Enabled = true;
 
+
+            }
+            else
+            {
+                btnLoad.Enabled = false;
+            }
+              
+        
         }
 
         private void lstPlaylist_SelectedIndexChanged(object sender, EventArgs e)
@@ -213,14 +223,60 @@ namespace SpotOsu
             lblSongName.Text = "Title: " + bm.title;
             lblArtist.Text = "Artist: " + bm.artist;
 
+        }
 
-            if (File.Exists(osuFolder + "data\\bt\\" + bm.beatmapSetID + "l.jpg"))
-                pictureBox1.ImageLocation = osuFolder + "data\\bt\\" + bm.beatmapSetID + "l.jpg";
-            else if (File.Exists(osuFolder + "data\\bt\\" + bm.beatmapSetID + ".jpg"))
-                pictureBox1.ImageLocation = osuFolder + "data\\bt\\" + bm.beatmapSetID + ".jpg";
-            else
-                pictureBox1.ImageLocation = null;
+        private void btn_browse_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog dlg = new FolderBrowserDialog();
+            dlg.Description = "Select osu! directory.";
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                if (File.Exists(dlg.SelectedPath + "/osu!.db") == true) {
+                    osuPath = dlg.SelectedPath + "\\" ;
+                    txtOsuPath.Text = dlg.SelectedPath;
+                    btnLoad.Enabled = true;
+                    
+                } 
+                else
+                {
+                    MessageBox.Show("Could not find osu database in this directory!");
+                }
+                
+            } 
+        }
 
+        private void spotifyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangeMode(Mode.SPOTIFY);
+            spotifyToolStripMenuItem.Checked = true;
+            soundCloudToolStripMenuItem.Checked = false;
+            lbl_mode.Text = "Spotify";
+        }
+
+        private void soundCloudToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ChangeMode(Mode.SOUNDCLOUD);
+            spotifyToolStripMenuItem.Checked = false;
+            soundCloudToolStripMenuItem.Checked = true;
+            lbl_mode.Text = "SoundCloud";
+        }
+
+        private void setClientidToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string id = Microsoft.VisualBasic.Interaction.InputBox("Input Spotify client_id", "Set Spotify client_id", "");
+            if (id != "")
+            {
+               client_id = id;
+               MessageBox.Show("Client ID set");
+            }
+            
+
+        }
+
+        private void clearClientIDToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            client_id = "";
+            MessageBox.Show("Client ID cleared");
         }
     }
 }
